@@ -1,4 +1,4 @@
-<a href ="https://github.com/manateelazycat/lsp-bridge/blob/master/README.zh-CN.md"><img src="https://img.shields.io/badge/README-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-555555.svg"/></a>
+<a href ="https://github.com/manateelazycat/effortless-indent/blob/master/README.zh-CN.md"><img src="https://img.shields.io/badge/README-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-555555.svg"/></a>
 
 # effortless-indent
 When we paste code and find that the indentation is incorrect, the traditional approach is to position the cursor at the beginning and end of the pasted code area, and insert spaces at the beginning of the line through rectangular operations to solve the problem.
