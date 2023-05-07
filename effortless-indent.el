@@ -150,9 +150,13 @@
         (goto-char start)
         (while (< (point) end)
           (insert (make-string indent ?\s))
-          (forward-line 1))
-        (insert (make-string indent ?\s))
-        ))))
+          (forward-line 1)))
+
+      ;; Indent last line of paste if last point of paste not beginning of line.
+      (goto-char end)
+      (unless (bolp)
+        (insert (make-string indent ?\s)))
+      )))
 
 (provide 'effortless-indent)
 
