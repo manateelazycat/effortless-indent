@@ -140,47 +140,64 @@
   (or (alist-get mode effortless-indent-formatting-indent-alist)
       (effortless-indent--get-indent-width (or (get mode 'derived-mode-parent) 'default))))
 
+(defun effortless-indent-area ()
+  (if (region-active-p)
+      (cons (line-number-at-pos (min (region-beginning) (region-end)) t)
+            (line-number-at-pos (max (region-beginning) (region-end)) t))
+    (cons (line-number-at-pos (min (mark) (point)) t)
+          (line-number-at-pos (max (mark) (point)) t))))
+
 (defun effortless-indent-right ()
   (interactive)
-  (let ((indent (symbol-value (effortless-indent--get-indent-width major-mode)))
-        (start (mark))
-        (end (point)))
+  (let* ((indent (symbol-value (effortless-indent--get-indent-width major-mode)))
+         (area (effortless-indent-area))
+         (start-line (car area))
+         (end-line (cdr area)))
     (save-excursion
-      (when (>= end start)
-        (goto-char start)
-        (while (< (point) end)
-          (insert (make-string indent ?\s))
-          (forward-line 1)))
+      (goto-line start-line)
+      (while (< (line-number-at-pos) end-line)
+        (insert (make-string indent ?\s))
+        (forward-line 1))
 
-      ;; Indent last line of paste if last point of paste not beginning of line.
-      (goto-char end)
-      (unless (bolp)
+      (unless (effortless-indent-is-blank-line-p)
+        (goto-char (line-beginning-position))
         (insert (make-string indent ?\s)))
-      )))
+      )
+
+    (goto-line start-line)
+    (set-mark (point))
+    (goto-line end-line)
+    ))
 
 (defun effortless-indent-left ()
   (interactive)
-  (let ((indent (symbol-value (effortless-indent--get-indent-width major-mode)))
-        (start (mark))
-        (end (point)))
+  (let* ((indent (symbol-value (effortless-indent--get-indent-width major-mode)))
+         (area (effortless-indent-area))
+         (start-line (car area))
+         (end-line (cdr area)))
     (save-excursion
-      (when (>= end start)
-        (goto-char start)
-        (while (< (point) end)
-          (goto-char (line-beginning-position))
-          (delete-region (point) (save-excursion
-                                   (forward-char indent)
-                                   (point)))
-          (forward-line 1)))
-
-      ;; Indent last line of paste if last point of paste not beginning of line.
-      (goto-char end)
-      (unless (bolp)
+      (goto-line start-line)
+      (while (< (line-number-at-pos) end-line)
         (goto-char (line-beginning-position))
         (delete-region (point) (save-excursion
                                  (forward-char indent)
-                                 (point))))
-      )))
+                                 (point)))
+        (forward-line 1))
+
+      (unless (effortless-indent-is-blank-line-p)
+        (goto-char (line-beginning-position))
+        (delete-region (point) (save-excursion
+                                 (forward-char indent)
+                                 (point)))))
+
+    (goto-line start-line)
+    (set-mark (point))
+    (goto-line end-line)))
+
+(defun effortless-indent-is-blank-line-p ()
+  (save-excursion
+    (beginning-of-line)
+    (looking-at "[[:space:]]*$")))
 
 (provide 'effortless-indent)
 
