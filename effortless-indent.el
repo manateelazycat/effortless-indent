@@ -141,11 +141,19 @@
       (effortless-indent--get-indent-width (or (get mode 'derived-mode-parent) 'default))))
 
 (defun effortless-indent-area ()
-  (if (region-active-p)
-      (cons (line-number-at-pos (min (region-beginning) (region-end)) t)
-            (line-number-at-pos (max (region-beginning) (region-end)) t))
-    (cons (line-number-at-pos (min (mark) (point)) t)
-          (line-number-at-pos (max (mark) (point)) t))))
+  (let (area)
+    (setq area
+          (cond
+           ;; Fetch region active area.
+           ((region-active-p)
+            (cons (min (region-beginning) (region-end))
+                  (max (region-beginning) (region-end)) ))
+           ;; Or area just copy.
+           (t
+            (cons (min (mark) (point))
+                  (max (mark) (point))))))
+    (cons (line-number-at-pos (car area) t)
+          (line-number-at-pos (cdr area) t))))
 
 (defun effortless-indent-right ()
   (interactive)
@@ -161,8 +169,7 @@
 
       (unless (effortless-indent-is-blank-line-p)
         (goto-char (line-beginning-position))
-        (insert (make-string indent ?\s)))
-      )
+        (insert (make-string indent ?\s))))
 
     (goto-line start-line)
     (set-mark (point))
@@ -174,25 +181,49 @@
   (let* ((indent (symbol-value (effortless-indent--get-indent-width major-mode)))
          (area (effortless-indent-area))
          (start-line (car area))
-         (end-line (cdr area)))
+         (end-line (cdr area))
+         (indent-can-adjust (effortless-indent-calculate-indent start-line end-line)))
+    (setq indent (min indent-can-adjust indent))
+    (if (and (> indent 0)
+             (not (equal start-line end-line)))
+        (progn
+          (save-excursion
+            (goto-line start-line)
+            (while (< (line-number-at-pos) end-line)
+              (goto-char (line-beginning-position))
+              (delete-region (point) (save-excursion
+                                       (forward-char indent)
+                                       (point)))
+              (forward-line 1))
+
+            (unless (effortless-indent-is-blank-line-p)
+              (goto-char (line-beginning-position))
+              (delete-region (point) (save-excursion
+                                       (forward-char indent)
+                                       (point)))))
+
+          (goto-line start-line)
+          (set-mark (point))
+          (goto-line end-line))
+      (message "Already reached the left side."))))
+
+(defun effortless-indent-calculate-indent (start-line end-line)
+  (let ((indent most-positive-fixnum))
     (save-excursion
       (goto-line start-line)
       (while (< (line-number-at-pos) end-line)
-        (goto-char (line-beginning-position))
-        (delete-region (point) (save-excursion
-                                 (forward-char indent)
-                                 (point)))
+        (unless (effortless-indent-is-blank-line-p)
+          (back-to-indentation)
+          (when (< (current-column) indent)
+            (setq indent (current-column))))
         (forward-line 1))
 
       (unless (effortless-indent-is-blank-line-p)
-        (goto-char (line-beginning-position))
-        (delete-region (point) (save-excursion
-                                 (forward-char indent)
-                                 (point)))))
-
-    (goto-line start-line)
-    (set-mark (point))
-    (goto-line end-line)))
+        (back-to-indentation)
+        (when (< (current-column) indent)
+          (setq indent (current-column)))
+        ))
+    indent))
 
 (defun effortless-indent-is-blank-line-p ()
   (save-excursion
