@@ -140,7 +140,7 @@
   (or (alist-get mode effortless-indent-formatting-indent-alist)
       (effortless-indent--get-indent-width (or (get mode 'derived-mode-parent) 'default))))
 
-(defun effortless-indent ()
+(defun effortless-indent-right ()
   (interactive)
   (let ((indent (symbol-value (effortless-indent--get-indent-width major-mode)))
         (start (mark))
@@ -156,6 +156,30 @@
       (goto-char end)
       (unless (bolp)
         (insert (make-string indent ?\s)))
+      )))
+
+(defun effortless-indent-left ()
+  (interactive)
+  (let ((indent (symbol-value (effortless-indent--get-indent-width major-mode)))
+        (start (mark))
+        (end (point)))
+    (save-excursion
+      (when (>= end start)
+        (goto-char start)
+        (while (< (point) end)
+          (goto-char (line-beginning-position))
+          (delete-region (point) (save-excursion
+                                   (forward-char indent)
+                                   (point)))
+          (forward-line 1)))
+
+      ;; Indent last line of paste if last point of paste not beginning of line.
+      (goto-char end)
+      (unless (bolp)
+        (goto-char (line-beginning-position))
+        (delete-region (point) (save-excursion
+                                 (forward-char indent)
+                                 (point))))
       )))
 
 (provide 'effortless-indent)
